@@ -4,6 +4,7 @@ import { getUsers, getUser, addUser, updateUser, deleteUser } from './api/method
 import { DBInMemory } from './db/database';
 import { ApiResponce, IUserData } from "./types";
 import { validate as uuidValidate } from 'uuid';
+import { isValidUserData } from './libs/validatePostData';
 
 dotenv.config();
 const PORT = process.env.PORT || 4000;
@@ -31,6 +32,12 @@ const server = http.createServer((request, response) => {
         sendResponce({
             status : 404,
             data: 'Invalid link or method!'
+        })
+    }
+    const invalidPostData = () => {
+        sendResponce({
+            status : 400,
+            data: 'Post data incorrect!'
         })
     }
 
@@ -65,6 +72,11 @@ const server = http.createServer((request, response) => {
             request.on('end', () => {
                 try {
                     const data = JSON.parse(Buffer.concat(chunks).toString()) as IUserData;
+
+                    if (!isValidUserData(data)) {
+                        invalidPostData();
+                        return;
+                    }
 
                     if (request.method === 'POST' && !id) {
                         const query = dataBase.addUser(data);
@@ -115,3 +127,4 @@ const server = http.createServer((request, response) => {
 
 server.listen(PORT);
 console.log(`Server started on port: ${PORT}`);
+

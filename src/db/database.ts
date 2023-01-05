@@ -18,8 +18,10 @@ export class DBInMemory {
 
     addUser(user: IUserData) {
         const newUser: IUser = {
-            ...user, 
             id: uuidv4(),
+            username: user.username,
+            age: user.age,
+            hobbies: user.hobbies
         }
         this.users.push(newUser);
         return newUser;
@@ -30,13 +32,15 @@ export class DBInMemory {
 
         const updatedUser: IUser = {
             id,
-            ...user,
+            username: user.username,
+            age: user.age,
+            hobbies: user.hobbies
         }
 
         if (index >= 0) {
             this.users[index] = updatedUser;
         }
-        
+
         return (index >= 0)? updatedUser : null;
     }
 
