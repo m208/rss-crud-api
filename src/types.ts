@@ -1,9 +1,10 @@
-export interface IUser {
-    id: string;
+export interface IUserData {
     username: string;
     age: number;
     hobbies: Array<string>;
 }
+
+export type IUser = IUserData & { id: string };
 
 export interface ApiResponce {
     status: number;

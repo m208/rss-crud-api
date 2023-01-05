@@ -1,4 +1,5 @@
-import { IUser } from "../types";
+import { IUser, IUserData } from "../types";
+import { v4 as uuidv4 } from 'uuid';
 
 export class DBInMemory {
     users: Array<IUser>;
@@ -15,18 +16,28 @@ export class DBInMemory {
         return this.users.find(el=>el.id === id) || null;
     }
 
-    addUser(user: IUser) {
-        this.users.push(user);
-        return user;
+    addUser(user: IUserData) {
+        const newUser: IUser = {
+            ...user, 
+            id: uuidv4(),
+        }
+        this.users.push(newUser);
+        return newUser;
     }
 
-    updateUser(id: string, user: IUser) {
+    updateUser(id: string, user: IUserData) {
         const index = this.users.findIndex(el => el.id === id);
 
-        if (index >= 0) {
-            this.users[index] = user;
+        const updatedUser: IUser = {
+            id,
+            ...user,
         }
-        return (index >= 0)? user : null;
+
+        if (index >= 0) {
+            this.users[index] = updatedUser;
+        }
+        
+        return (index >= 0)? updatedUser : null;
     }
 
     deleteUser(id: string) {

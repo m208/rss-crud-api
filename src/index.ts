@@ -2,7 +2,8 @@ import dotenv from 'dotenv';
 import http from 'http';
 import { getUsers, getUser, addUser, updateUser, deleteUser } from './api/methods';
 import { DBInMemory } from './db/database';
-import { ApiResponce, IUser } from "./types";
+import { ApiResponce, IUserData } from "./types";
+import { validate as uuidValidate } from 'uuid';
 
 dotenv.config();
 const PORT = process.env.PORT || 4000;
@@ -29,27 +30,27 @@ const server = http.createServer((request, response) => {
     const error404 = () => {
         sendResponce({
             status : 404,
-            data: 'Invalid link or method'
+            data: 'Invalid link or method!'
         })
     }
 
     if (usersRouteMatch){
         const id = usersRouteMatch[1].replace('/', '');
 
+        if (id && !uuidValidate(id)) {
+            uuidError();
+            return;
+        }
+
         if (request.method === 'GET') {
 
-            if (id && id === 'incorrect') {
-                uuidError();
-            }
-            else {
-               const query = id? dataBase.getUser(id) : dataBase.getUsers(); 
+            const query = id? dataBase.getUser(id) : dataBase.getUsers(); 
 
-               sendResponce({
-                    status : query? 200 : 404,
-                    data : query? query : 'User not founded'
-               })
-
-            }
+            sendResponce({
+                status : query? 200 : 404,
+                data : query? query : 'User not founded'
+            })
+            
         } 
 
         else if (request.method === 'POST' || request.method === 'PUT') {
@@ -62,26 +63,32 @@ const server = http.createServer((request, response) => {
             const chunks: Array<Uint8Array> = [];
             request.on('data', chunk => chunks.push(chunk) );
             request.on('end', () => {
-              const data = JSON.parse(Buffer.concat(chunks).toString()) as IUser;
-              
-              if (request.method === 'POST' && !id) {
-                const query = dataBase.addUser(data);
+                try {
+                    const data = JSON.parse(Buffer.concat(chunks).toString()) as IUserData;
 
-                answer.status = 201;
-                answer.data = query;
-              }
-
-              else if (request.method === 'PUT' && id) {
-                const query = dataBase.updateUser(id, data);
-
-                answer.status = query? 200 : 404;
-                answer.data = query? query : 'User not founded';
-              }
-
-              else {
-                answer.status = 404;
-                answer.data = 'Invalid link or method';
-              }
+                    if (request.method === 'POST' && !id) {
+                        const query = dataBase.addUser(data);
+        
+                        answer.status = 201;
+                        answer.data = query;
+                    }
+        
+                    else if (request.method === 'PUT' && id) {
+                        const query = dataBase.updateUser(id, data);
+        
+                        answer.status = query? 200 : 404;
+                        answer.data = query? query : 'User not founded';
+                    }
+        
+                    else {
+                        answer.status = 404;
+                        answer.data = 'Invalid link or method';
+                    }
+                } 
+                catch (err) {
+                    answer.status = 500;
+                    answer.data = 'Server error';
+                }
 
               sendResponce(answer);
               
