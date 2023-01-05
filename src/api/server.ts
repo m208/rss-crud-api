@@ -3,7 +3,7 @@ import { ApiResponce, IUserData } from '../types';
 import { validate as uuidValidate } from 'uuid';
 import { isValidUserData } from '../libs/validatePostData';
 
-export class ServerApp {
+export class Server {
     dataBase: any;
     port: number | string;
 

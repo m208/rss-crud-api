@@ -6,6 +6,7 @@
   "scripts": {
     "start:dev": "nodemon src/index.ts",
     "start:prod": "tsc && node ./build/index.js",
+    "start:multi": "nodemon src/multi.ts",
     "test": "jest --verbose --detectOpenHandles"
   },
   "repository": {
