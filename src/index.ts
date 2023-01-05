@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 4000;
 
 const dataBase = new DBInMemory();
 
-const server = http.createServer((request, response) => {
+export const server = http.createServer((request, response) => {
     const url = ((request.url || '')  + '/').replace('//', '/').toLowerCase();
 
     const usersRouteRegexp =/\/api\/users\/(.*)/;
