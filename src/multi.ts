@@ -6,47 +6,44 @@ import process from 'node:process';
 import { Balancer } from './api/balancer';
 import { Server } from './api/server';
 import { DBInMemory } from './db/database';
-
-const numCPUs = cpus().length;
-
-const messageHandler = (msg: any) => console.log(msg);
+import { DBTransfer } from './types';
 
 dotenv.config();
 const PORT = process.env.PORT || 4000;
+const numCPUs = cpus().length;
 
-const dataBase = new DBInMemory();
 
 if (cluster.isPrimary) {
-  console.log(`Primary ${process.pid} is running`);
+  console.log(`Load Balancer is running on port: ${PORT}`);
 
-  const balancer = new Balancer(PORT, numCPUs).init();
+  const balancer = new Balancer(+PORT, numCPUs).init();
   
+  const workers: Array<import("cluster").Worker> = [];
 
-  for (let i = 0; i < 1; i++) {
+  for (let i = 0; i < numCPUs; i++) {
     const worker = cluster.fork({forkIndex: i});
-    }
+    workers.push(worker)
+  }
 
+  // Resending consistent DB
     cluster.on('fork', function(worker) {
-        worker.on('message', messageHandler);
-        worker.send({ chat: 'Ok worker, Master got the message! Over and out!' });
-    })
+        worker.on('message', (data: DBTransfer) => {
+          workers.forEach(worker=>worker.send(data))
+        });
+    });
 
+} 
+else {
+  const dataBase = new DBInMemory();
 
-  cluster.on('exit', (worker, code, signal) => {
-    console.log(`worker ${worker.process.pid} died`);
-  });
-
-} else {
   const serverPort = +PORT + +(process.env.forkIndex || '') + 1;
-  const server = new Server(dataBase, serverPort).init();
-  
+  const worker = new Server(dataBase, serverPort, true);
+  const server = worker.init();
 
-  process.on('message', messageHandler);
-  process.send?.({ cmd: `my index: ${process.env.forkIndex}` });
-
-
-//   console.log(`Worker ${process.pid} started`);
-//   console.log(process.env.forkIndex);
+  // Apply consistent DB changes
+  process.on('message', (data: DBTransfer) => {
+    dataBase.replaceData(data.db);
+  });
   
 }
 

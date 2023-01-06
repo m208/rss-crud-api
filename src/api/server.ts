@@ -2,14 +2,17 @@ import http from 'http';
 import { ApiResponce, IUserData } from '../types';
 import { validate as uuidValidate } from 'uuid';
 import { isValidUserData } from '../libs/validatePostData';
+import { DBInMemory } from '../db/database';
 
 export class Server {
-    dataBase: any;
+    dataBase: DBInMemory;
     port: number | string;
+    multiwork: boolean;
 
-    constructor(dataBase: any, port: number | string) {
+    constructor(dataBase: DBInMemory, port: number | string, multi = false) {
         this.dataBase = dataBase;
         this.port = port;
+        this.multiwork = multi;
     }
 
     init(){
@@ -70,7 +73,7 @@ export class Server {
                     };
         
                     const chunks: Array<Uint8Array> = [];
-                    request.on('data', chunk => chunks.push(chunk) );
+                    request.on('data', (chunk: Uint8Array) => chunks.push(chunk) );
                     request.on('end', () => {
                         try {
                             const data = JSON.parse(Buffer.concat(chunks).toString()) as IUserData;
@@ -85,6 +88,10 @@ export class Server {
                 
                                 answer.status = 201;
                                 answer.data = query;
+
+                                if (this.multiwork && query){
+                                    process.send?.({ db:  this.dataBase.getUsers()});
+                                }
                             }
                 
                             else if (request.method === 'PUT' && id) {
@@ -92,6 +99,10 @@ export class Server {
                 
                                 answer.status = query? 200 : 404;
                                 answer.data = query? query : 'User not founded';
+
+                                if (this.multiwork && query){
+                                    process.send?.({ db:  this.dataBase.getUsers()});
+                                }
                             }
                 
                             else {
@@ -111,6 +122,10 @@ export class Server {
         
                 else if(request.method === 'DELETE' && id) {
                     const query = this.dataBase.deleteUser(id);
+
+                    if (this.multiwork && query){
+                        process.send?.({ db:  this.dataBase.getUsers()});
+                    }
         
                     sendResponce({
                         status: query? 204 : 404,

@@ -8,6 +8,10 @@ export class DBInMemory {
         this.users = [];
     }
 
+    replaceData(users: Array<IUser>){
+        this.users = users;
+    }
+
     getUsers() {
         return this.users;
     }

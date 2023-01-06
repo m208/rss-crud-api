@@ -1,23 +1,22 @@
 import http from 'http';
 
 export class Balancer {
-    port: number | string;
-    counter = 0;
-    serverCount: number;
+    port: number;
+    counter = 1;
+    forksCount: number;
 
-    constructor(port: number | string, serverCount: number) {
+    constructor(port: number, forksCount: number) {
         this.port = port;
-        this.serverCount = serverCount;
+        this.forksCount = forksCount;
     }
 
     init() {
         const balancer = http.createServer((request, response) => {
             const chunks: Array<Uint8Array> = [];
-            request.on('data', chunk => chunks.push(chunk) );
+            request.on('data', (chunk: Uint8Array) => chunks.push(chunk) );
 
             request.on('end', () => {
-                //(this.counter === this.serverCount) ? this.counter = 1 : this.counter++ 
-                this.counter = 1;
+                (this.counter === this.forksCount) ? this.counter = 1 : this.counter++ 
 
                 const options = {
                     hostname: 'localhost',
@@ -34,13 +33,13 @@ export class Balancer {
 
                 redirect.on('response', (worker) => {
                     const chunks: Array<Uint8Array> = [];
-                    worker.on('data', chunk => chunks.push(chunk));
+                    worker.on('data', (chunk: Uint8Array) => chunks.push(chunk));
                     worker.on('end', () => {
                         response.writeHead(worker.statusCode!, { 'Content-Type': 'application/json' });
                         response.end(chunks.toString());
                     });
                 });
-            })
+            });
         });
 
         balancer.listen(this.port);
